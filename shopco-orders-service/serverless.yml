@@ -26,9 +26,7 @@ provider:
   role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
   stage: dev
     
-custom:
-  stage: ${opt:stage, self:provider.stage}
-  secrets: ${file(secrets.yml):${self:custom.stage}}
+
 
 # you can overwrite defaults here
 #  stage: dev
@@ -57,9 +55,6 @@ package:
     - node_modules/**
     - secrets.yml
 
-plugins:
-  - serverless-python-requirements
-  - serverless-pseudo-parameters
 
 functions:
   insertOrderDb:
@@ -92,9 +87,7 @@ functions:
       QUEUE_NAME: ${self:resources.Resources.CreateOrderQueue.Properties.QueueName} 
         #shopco_order_added
 
-custom:
-  pythonRequirements:
-    dockerizePip: true
+
 
 resources:
   Resources:
@@ -113,10 +106,18 @@ resources:
             - Sid: "1"
               Effect: Allow
               Principal:
-                AWS: arn:aws:iam::#{AWS:AccountId}:role/lambda-vpc-role
+                AWS: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
               Action: sqs:*
               Resource: "*"
         Queues:
             - !Ref CreateOrderQueue
 
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
 
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  secrets: ${file(secrets.yml):${self:custom.stage}}
+  pythonRequirements:
+    dockerizePip: true

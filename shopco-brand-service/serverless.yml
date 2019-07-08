@@ -22,10 +22,8 @@ service: shopco-brand-service # NOTE: update this with your service name
 provider:
   name: aws
   runtime: python3.7
-  profile: brian.smith@sas.com
   region: us-east-2
   stage: dev
-  #role: arn:aws:iam::815248853218:role/lambda-vpc-role
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
   iamRoleStatements:
@@ -87,24 +85,6 @@ functions:
           path: brands/{id}
           method: delete
           cors: true
-#  add_brand_sqs:
-#    handler: handler.add_brand_sqs
-#    environment:
-#      added_queue_name: shopco_brand_added
-#  add_brand_db:
-#    handler: handler.add_brand_db
-#    vpc:
-#      securityGroupIds:
-#      - sg-8e8dafe1
-#      subnetIds:
-#      - subnet-05737cb9604a122e3
-#      - subnet-03e728315e893d501
-#    environment:
-#      db: products
-#      user: shopco
-#      pass: 0ch0R10s
-#      host: shopco.c6lhbq3bkj7r.us-east-2.rds.amazonaws.com
-#      port: 5432
 
 resources:
   Resources:
