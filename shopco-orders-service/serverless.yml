@@ -26,6 +26,9 @@ provider:
   role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
   stage: dev
     
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  secrets: ${file(secrets.yml):${self:custom.stage}}
 
 # you can overwrite defaults here
 #  stage: dev
@@ -52,6 +55,7 @@ package:
   exclude:
     - venv/**
     - node_modules/**
+    - secrets.yml
 
 plugins:
   - serverless-python-requirements
@@ -62,10 +66,10 @@ functions:
     handler: orders/createdb.insert
     environment:
       db: orders
-      user: shopco
-      pass: 0ch0R10s
-      host: shopco.c6lhbq3bkj7r.us-east-2.rds.amazonaws.com
-      port: 5432
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
     vpc:
       securityGroupIds:
         - sg-8e8dafe1
