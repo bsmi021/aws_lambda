@@ -19,6 +19,8 @@ var/
 venv/
 node_modules
 .vscode/
+/package.json
+/package-lock.json
 
 # Serverless directories
 .serverless
