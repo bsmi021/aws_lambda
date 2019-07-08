@@ -4,7 +4,7 @@ import json
 import boto3
 
 sns = boto3.client('sns')
-topic = os.envion['TOPIC']
+topic = os.environ['TOPIC']
 
 def delete(event, context):
     

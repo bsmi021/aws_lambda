@@ -22,12 +22,10 @@ service: shopco-item-service # NOTE: update this with your service name
 provider:
   name: aws
   runtime: python3.7
-  profile: brian.smith@sas.com
   region: us-east-2
   stage: dev
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
-  #role: arn:aws:iam::815248853218:role/lambda-vpc-role
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -44,8 +42,26 @@ package:
   exclude:
     - venv/**
     - node_modules/**
+    - package.json
+    - package-lock.json
 
 functions:
+  get:
+    handler: items/get.get
+    events:
+      - http:
+          path: items/{id}
+          method: get
+          cors: true
+
+  list:
+    handler: items/list.list
+    events:
+      - http:
+          path: items
+          method: get
+          cors: true
+
   create:
     handler: items/create.create
     environment:
@@ -55,7 +71,8 @@ functions:
           path: items
           method: post
           cors: true
-  insert:
+
+  db-insert:
     handler: items/db/insert.insert
     #environment:
     #  DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
@@ -63,6 +80,22 @@ functions:
       - sns:
          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-create-${opt:stage, self:provider.stage}'
   
+  update:
+    handler: items/update.update
+    environment:
+      TOPIC: !Ref UpdateItemTopic
+    events:
+      - http:
+          path: items/{id}
+          method: put
+          cors: true
+
+  db-update:
+    handler: items/db/update.update
+    events:
+      - sns:
+         arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-update-${opt:stage, self:provider.stage}'
+
   delete:
     handler: items/delete.delete
     environment:
@@ -73,13 +106,11 @@ functions:
           method: delete
           cors: true
 
-  dbdelete:
+  db-delete:
     handler: items/db/delete.delete
     events:
       - sns:
          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-delete-${opt:stage, self:provider.stage}'
-  
-        
 
 resources:
   Resources:
