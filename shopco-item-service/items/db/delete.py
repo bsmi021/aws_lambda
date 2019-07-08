@@ -2,6 +2,8 @@ import os
 import json
 import boto3
 
+import datetime as dt
+
 dynamodb = boto3.resource('dynamodb')
 
 table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
@@ -38,9 +40,9 @@ def delete(event, context):
                 },
                 ExpressionAttributeValues={
                     ':delete_flg': True,
-                    ':updatedAt': timestamp
+                    ':updatedAt': str(dt.datetime.utcnow())
                 },
-                UpdateExpression='SET #is_deleted = :delete_flg, updatedAt = :updatedAt',
+                UpdateExpression='SET #is_deleted = :delete_flg, modifiedAt = :updatedAt',
                 ReturnValues='ALL_NEW'
             )
 

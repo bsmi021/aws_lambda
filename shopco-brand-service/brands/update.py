@@ -8,7 +8,6 @@ import boto3
 dynamodb = boto3.resource('dynamodb')
 
 def update(event, context):
-    print(event)
 
     data = json.loads(event['body'])
     if 'name' not in data:
