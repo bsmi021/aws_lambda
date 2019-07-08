@@ -1,0 +1,171 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: shopco-orders-service # NOTE: update this with your service name
+#app: your-app-name
+#tenant: your-tenant-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: python3.7
+  profile: brian.smith@sas.com
+  region: us-east-2
+  role: arn:aws:iam::815248853218:role/lambda-vpc-role
+  stage: dev
+    
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - rds:*
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - sqs:*
+      Resource:
+        - "*"
+
+# you can add packaging information here
+package:
+#  include:
+#    - include-me.py
+#    - include-me-dir/**
+  exclude:
+    - venv/**
+    - node_modules/**
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+
+functions:
+  insertOrderDb:
+    handler: orders/createdb.insert
+    environment:
+      db: orders
+      user: shopco
+      pass: 0ch0R10s
+      host: shopco.c6lhbq3bkj7r.us-east-2.rds.amazonaws.com
+      port: 5432
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - sqs:
+          arn: 'arn:aws:sqs:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}'
+            #"arn:aws:sqs:${opt:region, self:provider.region}:${d{12}}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}"
+          batchSize: 10
+  create:
+    handler: orders/create.create
+    events:
+      - http:
+          path: orders
+          method: post
+          cors: true
+    environment:
+      QUEUE_NAME: ${self:resources.Resources.CreateOrderQueue.Properties.QueueName} 
+        #shopco_order_added
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+
+resources:
+  Resources:
+    CreateOrderQueue:
+      Type: 'AWS::SQS::Queue'
+      DeletionPolicy: Retain
+      Properties:
+        QueueName: ${self:service}-create-${opt:stage, self:provider.stage}
+    CreateOrderQueuePolicy:
+      Type: 'AWS::SQS::QueuePolicy'
+      Properties:
+        PolicyDocument:
+          Id: CreateOrderQueuePolicy
+          Version: '2012-10-17'
+          Statement:
+            - Sid: "1"
+              Effect: Allow
+              Principal:
+                AWS: arn:aws:iam::815248853218:role/lambda-vpc-role
+              Action: sqs:*
+              Resource: "*"
+        Queues:
+            - !Ref CreateOrderQueue
+
+
+
+#    The following are a few example events you can configure
+#    NOTE: Please make sure to change your handler code to work with those events
+#    Check the event documentation for details
+#    events:
+#      - http:
+#          path: users/create
+#          method: get
+#      - websocket: $connect
+#      - s3: ${env:BUCKET}
+#      - schedule: rate(10 minutes)
+#      - sns: greeter-topic
+#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
+#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
+#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
+#      - iot:
+#          sql: "SELECT * FROM 'some_topic'"
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - "aws.ec2"
+#            detail-type:
+#              - "EC2 Instance State-change Notification"
+#            detail:
+#              state:
+#                - pending
+#      - cloudwatchLog: '/aws/lambda/hello'
+#      - cognitoUserPool:
+#          pool: MyUserPool
+#          trigger: PreSignUp
+#      - alb:
+#          listenerArn: arn:aws:elasticloadbalancing:us-east-1:XXXXXX:listener/app/my-load-balancer/50dc6c495c0c9188/
+#          priority: 1
+#          conditions:
+#            host: example.com
+#            path: /hello
+
+#    Define function environment variables here
+#    environment:
+#      variable2: value2
+
+# you can add CloudFormation resource templates here
+#resources:
+#  Resources:
+#    NewResource:
+#      Type: AWS::S3::Bucket
+#      Properties:
+#        BucketName: my-new-bucket
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"

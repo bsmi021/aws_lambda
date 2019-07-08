@@ -1,0 +1,1 @@
+type nul > %1\create.py && type nul > %1\models.py && type nul > %1\list.py && type nul > %1\get.py && type nul > %1\delete.py && type nul > %1\update.py

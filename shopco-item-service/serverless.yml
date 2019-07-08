@@ -1,0 +1,142 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: shopco-item-service # NOTE: update this with your service name
+#app: your-app-name
+#tenant: your-tenant-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: python3.7
+  profile: brian.smith@sas.com
+  region: us-east-2
+  stage: dev
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  #role: arn:aws:iam::815248853218:role/lambda-vpc-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+
+package:
+  exclude:
+    - venv/**
+    - node_modules/**
+
+functions:
+  create:
+    handler: items/create.create
+    environment:
+      TOPIC: !Ref CreateItemTopic
+    events:
+      - http:
+          path: items
+          method: post
+          cors: true
+  insert:
+    handler: items/db/insert.insert
+    #environment:
+    #  DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    events:
+      - sns:
+         arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-create-${opt:stage, self:provider.stage}'
+  
+  delete:
+    handler: items/delete.delete
+    environment:
+      TOPIC: !Ref DeleteItemTopic
+    events:
+      - http:
+          path: items/{id}
+          method: delete
+          cors: true
+
+  dbdelete:
+    handler: items/db/delete.delete
+    events:
+      - sns:
+         arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-delete-${opt:stage, self:provider.stage}'
+  
+        
+
+resources:
+  Resources:
+    ItemsDynamoDbTable:
+        Type: 'AWS::DynamoDB::Table'
+        DeletionPolicy: Retain
+        Properties:
+          AttributeDefinitions:
+            -
+              AttributeName: id
+              AttributeType: S
+          KeySchema:
+            -
+              AttributeName: id
+              KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+          TableName: ${self:provider.environment.DYNAMODB_TABLE}
+    CreateItemTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+          DisplayName: 'Create Shopco Item Topic'
+          TopicName: ${self:service}-create-${opt:stage, self:provider.stage}
+    DeleteItemTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+          DisplayName: 'Delete Shopco Item Topic'
+          TopicName: ${self:service}-delete-${opt:stage, self:provider.stage}
+    UpdateItemTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+          DisplayName: 'Update Shopco Item Topic'
+          TopicName: ${self:service}-update-${opt:stage, self:provider.stage}
+    ItemTopicPolicy:
+      Type: 'AWS::SNS::TopicPolicy'
+      Properties:
+        PolicyDocument:
+          Id: CreateItemTopicPolicy
+          Version: '2012-10-17'
+          Statement:
+            - Sid: "1"
+              Effect: Allow
+              Principal: "*" 
+              Action: 
+                #SNS:Publish
+                SNS:Publish
+              Resource: "*"
+        Topics:
+          - !Ref CreateItemTopic
+          - !Ref UpdateItemTopic
+          - !Ref DeleteItemTopic
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+
+custom:
+  pythonRequirements:
+    dockerizePip: false

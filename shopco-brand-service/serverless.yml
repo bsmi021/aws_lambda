@@ -1,0 +1,134 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: shopco-brand-service # NOTE: update this with your service name
+#app: your-app-name
+#tenant: your-tenant-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: python3.7
+  profile: brian.smith@sas.com
+  region: us-east-2
+  stage: dev
+  #role: arn:aws:iam::815248853218:role/lambda-vpc-role
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+# you can add packaging information here
+package:
+#  include:
+#    - include-me.py
+#    - include-me-dir/**
+  exclude:
+      - venv/**
+      - node_modules/**
+
+functions:
+  create:
+    handler: brands/create.create
+    events:
+      - http:
+          path: brands
+          method: post
+          cors: true
+  get:
+    handler: brands/get.get
+    events:
+      - http:
+          path: brands/{id}
+          method: get
+          cors: true
+
+  list:
+    handler: brands/list.list
+    events:
+      - http:
+          path: brands
+          method: get
+          cors: true
+
+  update:
+    handler: brands/update.update
+    events:
+      - http:
+          path: brands/{id}
+          method: put
+          cors: true
+          
+  delete:
+    handler: brands/delete.delete
+    events:
+      - http:
+          path: brands/{id}
+          method: delete
+          cors: true
+#  add_brand_sqs:
+#    handler: handler.add_brand_sqs
+#    environment:
+#      added_queue_name: shopco_brand_added
+#  add_brand_db:
+#    handler: handler.add_brand_db
+#    vpc:
+#      securityGroupIds:
+#      - sg-8e8dafe1
+#      subnetIds:
+#      - subnet-05737cb9604a122e3
+#      - subnet-03e728315e893d501
+#    environment:
+#      db: products
+#      user: shopco
+#      pass: 0ch0R10s
+#      host: shopco.c6lhbq3bkj7r.us-east-2.rds.amazonaws.com
+#      port: 5432
+
+resources:
+  Resources:
+    BrandsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
+#plugins:
+#  - serverless-python-requirements
+
+#custom:
+#  pythonRequirements:
+#    dockerizePip: true
+
