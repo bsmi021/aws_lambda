@@ -84,18 +84,44 @@ functions:
           method: post
           cors: true
     environment:
-      QUEUE_NAME: ${self:resources.Resources.CreateOrderQueue.Properties.QueueName} 
+      TOPIC: !Ref CreateOrderTopic
         #shopco_order_added
 
 
 
 resources:
   Resources:
+    CreateOrderTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+        DisplayName: 'Create Shopco Order Topic'
+        TopicName: ${self:service}-create-${opt:stage, self:provider.stage}
+    OrderTopicPolicy:
+      Type: 'AWS::SNS::TopicPolicy'
+      Properties:
+        PolicyDocument:
+          Id: OrderTopicPolicy
+          Version: '2012-10-17'
+          Statement:
+            - Sid: "1"
+              Effect: Allow
+              Principal: "*"
+              Action:
+                SNS:Publish
+              Resource: "*"
+        Topics:
+          - !Ref CreateOrderTopic
+
     CreateOrderQueue:
       Type: 'AWS::SQS::Queue'
       DeletionPolicy: Retain
       Properties:
         QueueName: ${self:service}-create-${opt:stage, self:provider.stage}
+    NifiCreateOrderQueue:
+      Type: 'AWS::SQS::Queue'
+      DeletionPolicy: Retain
+      Properties:
+        QueueName: ${self:service}-nifi-create-${opt:stage, self:provider.stage}
     CreateOrderQueuePolicy:
       Type: 'AWS::SQS::QueuePolicy'
       Properties:
@@ -111,6 +137,23 @@ resources:
               Resource: "*"
         Queues:
             - !Ref CreateOrderQueue
+            - !Ref NifiCreateOrderQueue
+    CreateOrderQueueSNSSub:
+      Type: 'AWS::SNS::Subscription'
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt
+          - CreateOrderQueue
+          - Arn
+        TopicArn: !Ref CreateOrderTopic
+    NifiCreateOrderSNSSub:
+      Type: 'AWS::SNS::Subscription'
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt
+          - NifiCreateOrderQueue
+          - Arn
+        TopicArn: !Ref CreateOrderTopic
 
 plugins:
   - serverless-python-requirements

@@ -8,16 +8,16 @@ import boto3
 from botocore.exceptions import ClientError
 from orders.models import Order
 
-queue_name = os.environ.get('QUEUE_NAME')
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(levelname)s: %(asctime)s: %(message)s')
 
-# set connection to sqs
-sqs = boto3.resource('sqs')
-queue = sqs.get_queue_by_name(QueueName=queue_name)
+#logger = logging.get_logger()
 
-logging.info(f"Connected to SQS - {queue_name}")
+# create the sns client
+sns = boto3.client('sns')
+topic = os.environ['TOPIC']
+
 
 
 def create(event, context):
@@ -53,11 +53,8 @@ def create(event, context):
 
             msg_body = json.dumps(msg_body)
 
-            msg = queue.send_message(MessageBody=msg_body)
-
-            if msg is not None:
-                print(msg['messageId'])
-                logging.info(f'Sent SQS message ID: {msg["messageId"]}')
+            msg = sns.publish(TopicArn=topic,
+                Message=msg_body)
 
         except ClientError as e:
             logging.error(e)
