@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute
+from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute, NumberAttribute, JSONAttribute
 from pynamodb.models import Model
 
 aws_region = os.environ['REGION']
@@ -16,13 +16,19 @@ class CustomerModel(Model):
             host = f'https://dynamodb.{aws_region}.amazonaws.com'
 
     id = UnicodeAttribute(hash_key=True, null=False)
-    first_name=UnicodeAttribute(null=False)
-    last_name=UnicodeAttribute(null=False)
-
+    first_name = UnicodeAttribute(null=False)
+    last_name = UnicodeAttribute(null=False)
+    version = NumberAttribute(null=False)
+    email_addr=UnicodeAttribute(null=False)
     createdAt = UTCDateTimeAttribute(null=False, default=datetime.now())
     updatedAt = UTCDateTimeAttribute(null=False)
 
     def save(self, conditional_operator=None, **expected_values):
+        version = self.version
+        if version is None:
+            self.version = 1
+        else:
+            self.version = int(self.version) + 1
         self.updatedAt = datetime.now()
         super(CustomerModel, self).save()
 

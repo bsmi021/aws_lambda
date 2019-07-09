@@ -79,13 +79,33 @@ resources:
           -
             AttributeName: id
             AttributeType: S
+          - 
+            AttributeName: version
+            AttributeType: N
         KeySchema:
           -
             AttributeName: id
             KeyType: HASH
+          - 
+            AttributeName: version
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          -
+            IndexName: "versionGSI"
+            KeySchema:
+              - AttributeName: id
+                KeyType: "HASH"
+              -
+                AttributeName: version
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
         TableName: ${self:provider.environment.DYNAMODB_TABLE}
 
 plugins:

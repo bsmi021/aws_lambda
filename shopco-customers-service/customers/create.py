@@ -22,7 +22,8 @@ def create(event, context):
 
     customer = CustomerModel(id=str(uuid.uuid4()),
                              first_name=data['first_name'],
-                             last_name=data['last_name'])
+                             last_name=data['last_name'],
+                             email_addr=data['email_addr'])
     
     customer.save()
 
