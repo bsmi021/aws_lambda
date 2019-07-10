@@ -8,9 +8,10 @@ import boto3
 from botocore.exceptions import ClientError
 from orders.models import Order
 
+logger = logging.getLogger()
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(levelname)s: %(asctime)s: %(message)s')
+#logger.basicConfig(level=logging.DEBUG,
+ #                   format='%(levelname)s: %(asctime)s: %(message)s')
 
 #logger = logging.get_logger()
 
@@ -41,28 +42,32 @@ def create(event, context):
         order_amt = 0
 
     # create an instance of the order model
-    order = Order(id=id, order_date=order_date, order_amount=order_amt)
+    #order = Order(order_id=id, order_date=order_date, order_amount=order_amt)
+
+    event['order_id'] = id
+    event['order_date'] = str(order_date)
 
     try:
         response = {'statusCode': 201,
-                    'body': json.dumps({'orderId': order.id, 'orderDate': str(order.order_date)})
+                    'body': json.dumps(event)
                     }
 
         try:
-            msg_body = {'orderId': order.id, 'orderDate': str(order.order_date), 'orderAmount': str(order.order_amount)}
+            #msg_body = {'orderId': order.id, 'orderDate': str(order.order_date), 'orderAmount': str(order.order_amount)}
 
-            msg_body = json.dumps(msg_body)
+            msg_body = json.dumps(event)
 
-            msg = sns.publish(TopicArn=topic,
-                Message=msg_body)
+            msg = sns.publish(TopicArn=topic, Message=msg_body)
+
+            logger.info(msg)
 
         except ClientError as e:
-            logging.error(e)
+            logger.error(e)
 
     except Exception as ex:
         print('Issue in submitting order -- %s' % order)
-        logging.error('Issue in submitting order -- %s' % order)
-        logging.error(ex)
+        logger.error('Issue in submitting order -- %s' % order)
+        logger.error(ex)
         print(ex)
 
         response = {'statusCode': 500, 'body': json.dumps( {

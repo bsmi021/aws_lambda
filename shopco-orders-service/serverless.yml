@@ -1,23 +1,4 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
-service: shopco-orders-service # NOTE: update this with your service name
-#app: your-app-name
-#tenant: your-tenant-name
-
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
-# frameworkVersion: "=X.X.X"
+service: shopco-ordering-service 
 
 provider:
   name: aws
@@ -25,14 +6,6 @@ provider:
   region: us-east-2
   role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
   stage: dev
-    
-
-
-# you can overwrite defaults here
-#  stage: dev
-#  region: us-east-1
-
-# you can add statements to the Lambda function's IAM Role here
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -45,20 +18,15 @@ provider:
       Resource:
         - "*"
 
-# you can add packaging information here
 package:
-#  include:
-#    - include-me.py
-#    - include-me-dir/**
   exclude:
     - venv/**
     - node_modules/**
     - secrets.yml
 
-
 functions:
-  insertOrderDb:
-    handler: orders/createdb.insert
+  db-insert:
+    handler: orders/db/insert.insert
     environment:
       db: orders
       user: ${self:custom.secrets.DB_USER}
@@ -74,7 +42,6 @@ functions:
     events:
       - sqs:
           arn: 'arn:aws:sqs:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}'
-            #"arn:aws:sqs:${opt:region, self:provider.region}:${d{12}}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}"
           batchSize: 10
   create:
     handler: orders/create.create
@@ -85,9 +52,6 @@ functions:
           cors: true
     environment:
       TOPIC: !Ref CreateOrderTopic
-        #shopco_order_added
-
-
 
 resources:
   Resources:
@@ -111,7 +75,6 @@ resources:
               Resource: "*"
         Topics:
           - !Ref CreateOrderTopic
-
     CreateOrderQueue:
       Type: 'AWS::SQS::Queue'
       DeletionPolicy: Retain
@@ -131,10 +94,12 @@ resources:
           Statement:
             - Sid: "1"
               Effect: Allow
-              Principal:
-                AWS: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
+              Principal: "*"
               Action: sqs:*
               Resource: "*"
+              Condition:
+                ArnEquals: 
+                  aws:SourceArn: !Ref CreateOrderTopic
         Queues:
             - !Ref CreateOrderQueue
             - !Ref NifiCreateOrderQueue

@@ -1,6 +1,6 @@
 -- #Table: public.payment_methods
 
---  DROP TABLE public.payment_methods;
+-- DROP TABLE public.payment_methods;
 
 CREATE TABLE public.payment_methods
 (
