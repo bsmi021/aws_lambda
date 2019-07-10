@@ -59,6 +59,7 @@ def create(event, context):
 
             msg = sns.publish(TopicArn=topic, Message=msg_body)
 
+            print(msg)
             logger.info(msg)
 
         except ClientError as e:

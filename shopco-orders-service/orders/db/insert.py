@@ -27,6 +27,7 @@ logger.info('Connected')
 def insert(event, context):
     for record in event['Records']:
         body = json.loads(record['body'])
+        body = json.loads(body['Message'])
         order_id = body['order_id']
         order_date = body['order_date']
         #order_amount = body['order_amount']
