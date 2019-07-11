@@ -1,6 +1,8 @@
 import os
 import logging
 import json
+from datetime import datetime
+
 
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
@@ -40,6 +42,9 @@ def insert(event, context):
         address = Address(address['street_1'], address['street_2'], address['city'], address['state'], address['country'], address['zip_code'])
 
         order = Order(order_id=order_id, order_date=order_date, customer_id=body['customer_id'], address=address)
+
+        order.created_at = datetime.utcnow()
+        order.updated_at = datetime.utcnow()
 
         try:
             # create a session

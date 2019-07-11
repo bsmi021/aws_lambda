@@ -1,0 +1,102 @@
+service: shopco-warehouse-service # NOTE: update this with your service name
+
+provider:
+  name: aws
+  runtime: python3.7
+  region: us-east-2
+  role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
+  stage: dev
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - rds:*
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - sqs:*
+      Resource:
+        - "*"
+package:
+  exclude:
+    - venv/**
+    - node_modules/**
+    - secrets.yml
+
+functions:
+  site-db-insert:
+    handler: warehouse/sites/db/insert.insert
+    environment:
+      db: warehouse
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - sns: 
+          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-create-${opt:stage, self:provider.stage}'
+          
+  create:
+    handler: warehouse/sites/create.create
+    events:
+      - http:
+          path: warehouse/sites
+          method: post
+          cors: true
+    environment:
+      TOPIC: !Ref CreateSiteTopic
+
+  update:
+    handler: warehouse/sites/update.update
+    events:
+      - http:
+          path: warehouse/sites/{id}
+          method: put
+          cors: true
+    environment:
+      TOPIC: !Ref ModifySiteTopic
+
+resources:
+  Resources:
+    CreateSiteTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+        DisplayName: 'Create Site Topic'
+        TopicName: ${self:service}-create-${opt:stage, self:provider.stage}
+    ModifySiteTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+        DisplayName: 'Modify Site Topic'
+        TopicName: ${self:service}-modify-${opt:stage, self:provider.stage} 
+    SiteTopicPolicy:
+      Type: 'AWS::SNS::TopicPolicy'
+      Properties:
+        PolicyDocument:
+          Id: SiteTopicPolicy
+          Version: '2012-10-17'
+          Statement:
+            - Sid: "1"
+              Effect: Allow
+              Principal: "*"
+              Action:
+                SNS:Publish
+              Resource: "*"
+        Topics:
+          - !Ref CreateSiteTopic
+          - !Ref ModifySiteTopic
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  secrets: ${file(secrets.yml):${self:custom.stage}}
+  pythonRequirements:
+    dockerizePip: true
