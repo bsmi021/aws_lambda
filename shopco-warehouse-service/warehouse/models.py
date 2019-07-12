@@ -4,10 +4,12 @@ from sqlalchemy.dialects import postgresql
 import random
 
 from sqlalchemy import (
-    Index, DECIMAL, Column, DateTime, ForeignKey, BigInteger, String, Boolean, Integer
+    Index, DECIMAL, Column, DateTime, ForeignKey, BigInteger,
+    String, Boolean, Integer
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
 
 class Base(object):
     created_at = Column(
@@ -21,6 +23,7 @@ class Base(object):
         nullable=False
     )
 
+
 DeclarativeBase = declarative_base(cls=Base)
 
 SiteTypes = {
@@ -28,6 +31,7 @@ SiteTypes = {
     2: 'Store',
     3: 'Forward Shipping'
 }
+
 
 class Site(DeclarativeBase):
     __tablename__ = 'sites'
@@ -45,7 +49,9 @@ class InventoryItem(DeclarativeBase):
     id = Column(BigInteger, primary_key=True)
     version = Column(BigInteger, primary_key=True, default=1)
     product_id = Column(String(36), primary_key=True, nullable=False)
-    site_id = Column(BigInteger,  ForeignKey('sites.id', name='fk_inventory_items_site'), primary_key=True, nullable=False)
+    site_id = Column(BigInteger,
+                     ForeignKey('sites.id', name='fk_inventory_items_site'),
+                     primary_key=True, nullable=False)
     on_reorder = Column(Boolean, default=False)
     restock_threshold = Column(Integer, nullable=False, default=0)
     max_stock_threshold = Column(Integer, nullable=False, default=0)
@@ -57,7 +63,8 @@ class InventoryItem(DeclarativeBase):
     def __init__(self, product_id, site_id):
         max_stock_threshold = random.randint(105, 1050)
         restock_threshold = random.randint(10, 50)
-        available_stock = random.randint(restock_threshold + 5, max_stock_threshold)
+        available_stock = random.randint(restock_threshold + 5,
+                                         max_stock_threshold)
 
         self.available_stock = available_stock
         self.max_stock_threshold = max_stock_threshold
@@ -66,6 +73,8 @@ class InventoryItem(DeclarativeBase):
         self.product_id = product_id
         self.site_id = site_id
 
+    def __repr__(self):
+        return f"<Site(site_id={self.site_id}, name={self.name}, type_id={self.type_id}, updated_at={self.updated_at}/>"
 
     def remove_stock(self, quantity_desired):
         """ decrements the quantity of an item from inventory"""
@@ -92,10 +101,13 @@ class InventoryItem(DeclarativeBase):
 
         original = self.available_stock
 
-        # the quantity that the client is tryintg to add to stock is greater than what the warehouse can accomodate
+        # the quantity that the client is tryintg to add to stock is greater
+        # than what the warehouse can accomodate
         if (self.available_stock + quantity) > self.max_stock_threshold:
-            # only add the amount of items that will cover max_stock_threshold, rest will be disgarded for this
-            self.available_stock += (self.max_stock_threshold - self.available_stock)
+            # only add the amount of items that will cover max_stock_threshold,
+            # rest will be disgarded for this
+            self.available_stock += (self.max_stock_threshold -
+                                     self.available_stock)
         else:
             self.available_stock += quantity
 

@@ -8,13 +8,15 @@ import os
 sns = boto3.client('sns')
 topic = os.environ['TOPIC']
 
+
 def errorResponse(attributeName):
     return {
-        'statusCode':422,
+        'statusCode': 422,
         'body': json.dumps({
-            "error":f"Required attribute {attributeName} is missing."
+            "error": f"Required attribute {attributeName} is missing."
         })
     }
+
 
 def create(event, context):
 
@@ -33,7 +35,7 @@ def create(event, context):
 
     if 'price' not in data:
         return errorResponse('price')
-    
+
     if 'description' not in data:
         data['description'] = ''
 
@@ -48,10 +50,10 @@ def create(event, context):
     data['updatedAt'] = timestamp
     data['is_deleted'] = False
 
-    response = sns.publish(TopicArn=topic, 
+    response = sns.publish(TopicArn=topic,
                            Message=json.dumps(data))
 
     return {
-        'statusCode':200,
-        'body': json.dumps({ 'id': data['id'] })
+        'statusCode': 200,
+        'body': json.dumps({'id': data['id']})
     }

@@ -23,31 +23,29 @@ db_name = os.environ.get('db')
 db_uri = f'postgres://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
 
 db_engine = create_engine(db_uri)
+Session = sessionmaker(bind=db_engine)
+session = Session()
+
 logger.info(f'Connected to the {db_name} database.')
-logger.info('Connected')
+
 
 def insert(event, context):
     """Inserts a Site record into the database
-    
+
     Arguments:
         event {object} -- Contains the payload
         context {object} -- Contains the Lambda Context information
     """
     for record in event['Records']:
         data = json.loads(record['Sns']['Message'])
-        
-        #body = json.loads(event['Message'])
 
-        site = Site(site_id=data['site_id'], name=data['name'], zip_code=data['zip_code'], type_id=data['type_id'])
+        site = Site(site_id=data['site_id'], name=data['name'],
+                    zip_code=data['zip_code'], type_id=data['type_id'])
         site.created_at = datetime.utcnow()
         site.updated_at = datetime.utcnow()
         site.is_deleted = False
         try:
-            # create a session
-            Session = sessionmaker(bind=db_engine)
-            session = Session()
-
-                # add the order to the session
+            # add the order to the session
             session.add(site)
             session.commit()
 
@@ -55,4 +53,3 @@ def insert(event, context):
         except Exception as ex:
             logger.error('Issue in submitting site -- %s' % site)
             logger.error(ex)
-

@@ -21,10 +21,11 @@ message_attributes = {
     }
 }
 
+
 def update(event, context):
     """ Sends a message to update the Site, only name, zip_code, and type_id are 
     allowed to be changed
-    
+
     Arguments:
         event {[type]} -- [description]
         context {[type]} -- [description]
@@ -40,7 +41,7 @@ def update(event, context):
 
     if 'name' not in body:
         pass
-    
+
     if 'zip_code' not in body:
         pass
 
@@ -55,16 +56,16 @@ def update(event, context):
         response = {'statusCode': 200,
                     'body': json.dumps(body)}
 
-        msg = sns.publish(TopicArn=topic, 
-                          Message=json.dumps(body), 
+        msg = sns.publish(TopicArn=topic,
+                          Message=json.dumps(body),
                           MessageAttributes=message_attributes)
 
         logger.info(msg)
     except Exception as ex:
         logger.error(ex)
 
-        response = {'statusCode': 500, 'body': json.dumps( {
-                'errorMsg': str(ex)
-            })}
+        response = {'statusCode': 500, 'body': json.dumps({
+            'errorMsg': str(ex)
+        })}
 
     return response

@@ -52,6 +52,24 @@ functions:
     environment:
       TOPIC: !Ref CreateSiteTopic
 
+  site-db-update:
+    handler: warehouse/sites/db/update.update
+    environment:
+      db: warehouse
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - sns: 
+          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-modify-${opt:stage, self:provider.stage}'
+
   update:
     handler: warehouse/sites/update.update
     events:
@@ -61,6 +79,34 @@ functions:
           cors: true
     environment:
       TOPIC: !Ref ModifySiteTopic
+
+  site-db-delete:
+    handler: warehouse/sites/db/delete.delete
+    environment:
+      db: warehouse
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - sns: 
+          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-delete-${opt:stage, self:provider.stage}'
+
+  delete:
+    handler: warehouse/sites/delete.delete
+    events:
+      - http:
+          path: warehouse/sites/{id}
+          method: delete
+          cors: true
+    environment:
+      TOPIC: !Ref DeleteSiteTopic
 
 resources:
   Resources:
@@ -73,7 +119,12 @@ resources:
       Type: 'AWS::SNS::Topic'
       Properties:
         DisplayName: 'Modify Site Topic'
-        TopicName: ${self:service}-modify-${opt:stage, self:provider.stage} 
+        TopicName: ${self:service}-modify-${opt:stage, self:provider.stage}
+    DeleteSiteTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+        DisplayName: 'Delete Site Topic'
+        TopicName: ${self:service}-delete-${opt:stage, self:provider.stage}
     SiteTopicPolicy:
       Type: 'AWS::SNS::TopicPolicy'
       Properties:
@@ -90,6 +141,7 @@ resources:
         Topics:
           - !Ref CreateSiteTopic
           - !Ref ModifySiteTopic
+          - !Ref DeleteSiteTopic
 
 plugins:
   - serverless-python-requirements
