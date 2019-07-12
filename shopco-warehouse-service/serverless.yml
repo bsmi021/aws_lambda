@@ -42,7 +42,7 @@ functions:
       - sns: 
           arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-create-${opt:stage, self:provider.stage}'
           
-  create:
+  site-create:
     handler: warehouse/sites/create.create
     events:
       - http:
@@ -70,7 +70,7 @@ functions:
       - sns: 
           arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-modify-${opt:stage, self:provider.stage}'
 
-  update:
+  site-update:
     handler: warehouse/sites/update.update
     events:
       - http:
@@ -98,7 +98,7 @@ functions:
       - sns: 
           arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-delete-${opt:stage, self:provider.stage}'
 
-  delete:
+  site-delete:
     handler: warehouse/sites/delete.delete
     events:
       - http:
@@ -107,6 +107,46 @@ functions:
           cors: true
     environment:
       TOPIC: !Ref DeleteSiteTopic
+
+  site-get:
+    handler: warehouse/sites/get.get
+    environment:
+      db: warehouse
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - http:
+          path: warehouse/sites/{id}
+          method: get
+          cors: true
+  
+  site-list:
+    handler: warehouse/sites/list.list
+    environment:
+      db: warehouse
+      user: ${self:custom.secrets.DB_USER}
+      pass: ${self:custom.secrets.DB_PASS}
+      host: ${self:custom.secrets.DB_HOST}
+      port: ${self:custom.secrets.DB_PORT}
+    vpc:
+      securityGroupIds:
+        - sg-8e8dafe1
+      subnetIds:
+        - subnet-05737cb9604a122e3
+        - subnet-03e728315e893d501
+    events:
+      - http:
+          path: warehouse/sites
+          method: get
+          cors: true
 
 resources:
   Resources:
