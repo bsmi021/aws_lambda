@@ -19,6 +19,7 @@ var/
 venv/
 node_modules
 .vscode/
+*.zip
 
 # Serverless directories
 .serverless

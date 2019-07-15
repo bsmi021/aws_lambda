@@ -11,7 +11,8 @@ def create(event, context):
         logging.error('Validation failed')
         return {
             'statusCode': 422,
-            'body': json.dumps({'error_message': 'Could\'t create the customer item.'})
+            'body': json.dumps({'error_message':
+                                'Could\'t create the customer item.'})
         }
 
     if not data['first_name'] or not data['last_name']:
@@ -19,7 +20,8 @@ def create(event, context):
             'Validation failed - first name or last name was empty. %s', data)
         return {
             'statusCode': 422,
-            'body': json.dumps({'error_message': 'Couldn\'t create the customer, name values missing'})
+            'body': json.dumps({'error_message':
+                                'Couldn\'t create the customer'})
         }
 
     customer = CustomerModel(id=str(uuid.uuid4()),

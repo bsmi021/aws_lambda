@@ -55,7 +55,7 @@ class CustomerModel(BaseModel):
     id = UnicodeAttribute(hash_key=True, null=False)
     first_name = UnicodeAttribute(null=False)
     last_name = UnicodeAttribute(null=False)
-    #address = Address()
+    # address = Address()
     version = NumberAttribute(null=False)
     email_addr = UnicodeAttribute(null=False)
     phone_number = UnicodeAttribute(null=True)

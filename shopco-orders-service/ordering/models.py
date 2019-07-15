@@ -1,6 +1,11 @@
 import os
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, UTCDateTimeAttribute, UnicodeSetAttribute, NumberAttribute, MapAttribute, ListAttribute
+from pynamodb.attributes import (UnicodeAttribute,
+                                 UTCDateTimeAttribute,
+                                 UnicodeSetAttribute,
+                                 NumberAttribute,
+                                 MapAttribute,
+                                 ListAttribute)
 from uuid import uuid4
 from datetime import datetime
 
