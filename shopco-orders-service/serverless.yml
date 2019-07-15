@@ -4,8 +4,11 @@ provider:
   name: aws
   runtime: python3.7
   region: us-east-2
-  role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
+  
   stage: dev
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    REGION: ${self:provider.region}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -17,6 +20,16 @@ provider:
         - sqs:*
       Resource:
         - "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
 
 package:
   exclude:
@@ -25,29 +38,40 @@ package:
     - secrets.yml
 
 functions:
-  db-insert:
-    handler: orders/db/insert.insert
-    environment:
-      db: orders
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
-    events:
-      - sqs:
-          arn: 'arn:aws:sqs:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}'
-          batchSize: 10
-  create:
-    handler: orders/create.create
+#  db-insert:
+#    handler: orders/db/insert.insert
+#    role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
+#    environment:
+#      db: orders
+#      user: ${self:custom.secrets.DB_USER}
+#      pass: ${self:custom.secrets.DB_PASS}
+#      host: ${self:custom.secrets.DB_HOST}
+#      port: ${self:custom.secrets.DB_PORT}
+#    vpc:
+#      securityGroupIds:
+#        - sg-8e8dafe1
+#      subnetIds:
+#        - subnet-05737cb9604a122e3
+#        - subnet-03e728315e893d501
+#    events:
+#      - sqs:
+#          arn: 'arn:aws:sqs:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:resources.Resources.CreateOrderQueue.Properties.QueueName}'
+#          batchSize: 10
+#  create:
+#    handler: orders/create.create
+#    events:
+#      - http:
+#          path: orders
+#          method: post
+#          cors: true
+#    environment:
+#      TOPIC: !Ref CreateOrderTopic
+
+  ordering-create:
+    handler: ordering/create.create
     events:
       - http:
-          path: orders
+          path: ordering
           method: post
           cors: true
     environment:
@@ -55,6 +79,41 @@ functions:
 
 resources:
   Resources:
+    OrdersDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+          -
+            AttributeName: customer_id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          -
+            IndexName: "customer_id-id-index"
+            KeySchema:
+              - AttributeName: customer_id
+                KeyType: "HASH"
+              -
+                AttributeName: id
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
+
     CreateOrderTopic:
       Type: 'AWS::SNS::Topic'
       Properties:
@@ -128,4 +187,4 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   secrets: ${file(secrets.yml):${self:custom.stage}}
   pythonRequirements:
-    dockerizePip: true
+    dockerizePip: false

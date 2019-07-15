@@ -1,0 +1,43 @@
+{
+    "customer_id":"1118181",
+    "ship_address":{
+        "street_1":"1313 Mockingbird Ln",
+        "street_2":" ",
+        "city": "anytown",
+        "state": "us",
+        "zip_code": "11011",
+        "country": "us"
+    },
+    "bill_address":{
+        "street_1":"1313 Mockingbird Ln",
+        "street_2":" ",
+        "city": "anytown",
+        "state": "us",
+        "zip_code": "11011",
+        "country": "us"
+    },
+    "buyer":{
+        "first_name":"eric",
+        "last_name": "bischoff",
+        "email_address": "easye@aoltimewarner.com",
+        "phone_number": "282838422"
+    },
+    "cc_num":"x0x0x0x0",
+    "cc_expr": "01/22",
+    "ccv": 321,
+    "card_type": "visa",
+    "line_items":[
+        {
+            "product_id":"218",
+            "product_name":"wwe® mondy night raw tickets",
+            "quantity": 2,
+            "unit_price": 101.98
+        },
+        {
+            "product_id":"219",
+            "product_name":"wwe® smackdown live",
+            "quantity": 2,
+            "unit_price": 45.98
+        }
+        ]
+}

@@ -53,6 +53,14 @@ functions:
           method: post
           cors: true
 
+  update:
+    handler: customers/update.update
+    events:
+      - http:
+          path: customers/{id}
+          method: put
+          cors: true
+
   get:
     handler: customers/get.get
     events:
@@ -86,9 +94,6 @@ resources:
           -
             AttributeName: id
             KeyType: HASH
-          - 
-            AttributeName: version
-            KeyType: RANGE
         GlobalSecondaryIndexes:
           -
             IndexName: "versionGSI"
