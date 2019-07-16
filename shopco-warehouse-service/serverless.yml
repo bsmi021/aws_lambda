@@ -4,12 +4,14 @@ provider:
   name: aws
   runtime: python3.7
   region: us-east-2
-  role: arn:aws:iam::#{AWS::AccountId}:role/lambda-vpc-role
   stage: dev
+  environment:
+    DYNAMODB_TABLE: ${self:service}-location-${opt:stage, self:provider.stage}
+    REGION: ${self:provider.region}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - rds:*
+        - sqs:*
       Resource:
         - "*"
     - Effect: "Allow"
@@ -17,6 +19,17 @@ provider:
         - sqs:*
       Resource:
         - "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
 package:
   exclude:
     - venv/**
@@ -24,132 +37,61 @@ package:
     - secrets.yml
 
 functions:
-  site-db-insert:
-    handler: warehouse/sites/db/insert.insert
-    environment:
-      db: warehouse
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
-    events:
-      - sns: 
-          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-create-${opt:stage, self:provider.stage}'
-          
-  site-create:
-    handler: warehouse/sites/create.create
+  location-create:
+    handler: locations/create.create
     events:
       - http:
-          path: warehouse/sites
+          path: locations
           method: post
           cors: true
-    environment:
-      TOPIC: !Ref CreateSiteTopic
-
-  site-db-update:
-    handler: warehouse/sites/db/update.update
-    environment:
-      db: warehouse
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
-    events:
-      - sns: 
-          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-modify-${opt:stage, self:provider.stage}'
-
-  site-update:
-    handler: warehouse/sites/update.update
+  location-update:
+    handler: locations/update.update
     events:
       - http:
-          path: warehouse/sites/{id}
+          path: locations/{id}
           method: put
           cors: true
-    environment:
-      TOPIC: !Ref ModifySiteTopic
-
-  site-db-delete:
-    handler: warehouse/sites/db/delete.delete
-    environment:
-      db: warehouse
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
-    events:
-      - sns: 
-          arn: 'arn:aws:sns:${opt:region, self:provider.region}:#{AWS::AccountId}:${self:service}-delete-${opt:stage, self:provider.stage}'
-
-  site-delete:
-    handler: warehouse/sites/delete.delete
+  location-delete:
+    handler: locations/delete.delete
     events:
       - http:
-          path: warehouse/sites/{id}
+          path: locations/{id}
           method: delete
           cors: true
-    environment:
-      TOPIC: !Ref DeleteSiteTopic
-
-  site-get:
-    handler: warehouse/sites/get.get
-    environment:
-      db: warehouse
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
+  location-get:
+    handler: locations/get.get
     events:
       - http:
-          path: warehouse/sites/{id}
+          path: locations/{id}
           method: get
           cors: true
-  
-  site-list:
-    handler: warehouse/sites/list.list
-    environment:
-      db: warehouse
-      user: ${self:custom.secrets.DB_USER}
-      pass: ${self:custom.secrets.DB_PASS}
-      host: ${self:custom.secrets.DB_HOST}
-      port: ${self:custom.secrets.DB_PORT}
-    vpc:
-      securityGroupIds:
-        - sg-8e8dafe1
-      subnetIds:
-        - subnet-05737cb9604a122e3
-        - subnet-03e728315e893d501
+  location-list:
+    handler: locations/list.list
     events:
       - http:
-          path: warehouse/sites
+          path: locations
           method: get
           cors: true
 
 resources:
   Resources:
+    LocationsDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
     CreateSiteTopic:
       Type: 'AWS::SNS::Topic'
       Properties:
@@ -191,4 +133,4 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   secrets: ${file(secrets.yml):${self:custom.stage}}
   pythonRequirements:
-    dockerizePip: true
+    dockerizePip: false

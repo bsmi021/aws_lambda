@@ -1,0 +1,10 @@
+{
+"city":"Test City",
+"country":"US",
+"name":"Test Site",
+"state":"Test State",
+"street_1":"Test Street 1",
+"street_2":"Test Street 2",
+"type_id":2,
+"zip_code":"Test Zip"
+}
