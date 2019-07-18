@@ -20,6 +20,7 @@ venv/
 node_modules
 .vscode/
 *.zip
+__pycache__/
 
 # Serverless directories
 .serverless

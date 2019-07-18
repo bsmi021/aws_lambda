@@ -4,11 +4,13 @@ import uuid
 
 from customers.models import CustomerModel
 
+logger = logging.getLogger()
+
 
 def create(event, context):
     data = json.loads(event['body'])
     if 'last_name' not in data:
-        logging.error('Validation failed')
+        logger.error('Validation failed')
         return {
             'statusCode': 422,
             'body': json.dumps({'error_message':
@@ -16,7 +18,7 @@ def create(event, context):
         }
 
     if not data['first_name'] or not data['last_name']:
-        logging.error(
+        logger.error(
             'Validation failed - first name or last name was empty. %s', data)
         return {
             'statusCode': 422,

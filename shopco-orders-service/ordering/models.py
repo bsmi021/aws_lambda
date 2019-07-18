@@ -71,7 +71,7 @@ class OrderItem(MapAttribute):
 class Order(BaseModel):
     class Meta:
         table_name = os.environ['DYNAMODB_TABLE']
-        if 'ENV' in os.environ['DYNAMODB_TABLE']:
+        if 'ENV' in os.environ:
             host = "http://localhost:8000"
         else:
             region = aws_region

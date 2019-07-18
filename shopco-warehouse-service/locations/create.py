@@ -6,12 +6,18 @@ import os
 # condition to test if running locally
 if 'ENV' in os.environ:
     from models import LocationModel
+    from schema import validate_location_json
 else:
     from locations.models import LocationModel
+    from locations.schema import validate_lcoation_json
 
 
 def create(event, context):
+
     data = json.loads(event['body'])
+
+    if not validate_location_json(data):
+        raise Exception('Invalid content provided.')
 
     try:
         location = LocationModel(
@@ -44,6 +50,10 @@ if __name__ == "__main__":
     # - DYNAMODB_TABLE=<TABLENAME>
     # - REGION=<WHATEVER>
     # - ENV=1
+
+    print(os.environ['DYNAMODB_TABLE'])
+    print(os.environ['ENV'])
+    print(os.environ['REGION'])
 
     place = {
         'name': 'TestSite',

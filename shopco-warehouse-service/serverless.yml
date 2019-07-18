@@ -14,11 +14,6 @@ provider:
         - sqs:*
       Resource:
         - "*"
-    - Effect: "Allow"
-      Action:
-        - sqs:*
-      Resource:
-        - "*"
     - Effect: Allow
       Action:
         - dynamodb:Query

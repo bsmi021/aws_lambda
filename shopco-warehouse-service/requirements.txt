@@ -2,3 +2,4 @@
 #SQLAlchemy==1.3.5
 pynamodb
 py-linq>=1.0.0
+jsonschema
